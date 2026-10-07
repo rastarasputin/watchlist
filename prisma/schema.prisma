@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Film {
+  id             Int      @id @default(autoincrement())
+  tmdbId         Int      @unique
+  title          String
+  year           Int
+  runtime        Int?
+  genres         String   // JSON array stored as string e.g. '["Drama","Thriller"]'
+  posterPath     String?
+  backdropPath   String?
+  synopsis       String?
+  director       String?
+  cast           String?  // JSON array stored as string e.g. '["Actor One","Actor Two"]'
+  trailerKey     String?  // YouTube video key from TMDB
+  streamingData  String?  // JSON array stored as string, refreshed periodically
+  letterboxdUri    String?  @unique  // e.g. "https://boxd.it/dR3i" — stable match key for re-sync
+  letterboxdRating Float?
+  dateAdded      DateTime @default(now())
+  watched        Boolean  @default(false)
+  notes          String?  // personal observations, creative references, free text
+  tags           String?  // JSON array of custom mood/creative tags e.g. '["melancholy","wide angles"]'
+  playlists      PlaylistFilm[]
+}
+
+model Playlist {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  films       PlaylistFilm[]
+}
+
+// Junction table linking films to playlists, with ordering
+model PlaylistFilm {
+  playlistId Int
+  filmId     Int
+  order      Int      @default(0)
+  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  film       Film     @relation(fields: [filmId], references: [id], onDelete: Cascade)
+
+  @@id([playlistId, filmId])
+}

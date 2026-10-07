@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Watchlist — Case Study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500&family=Xanh+Mono:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0a0a0a;
+    --surface:  #111111;
+    --border:   #1f1f1f;
+    --muted:    #404040;
+    --subtle:   #6b6b6b;
+    --body:     #c8c8c8;
+    --heading:  #f0f0f0;
+    --accent:   #e8e8e8;
+    --font-display: 'Xanh Mono', 'Courier New', monospace;
+    --font-body:    'Work Sans', system-ui, sans-serif;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--bg);
+    color: var(--body);
+    font-family: var(--font-body);
+    font-weight: 300;
+    line-height: 1.6;
+    overflow: hidden;
+  }
+
+  /* ── Slide engine ─────────────────────────────────────────── */
+
+  .deck {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 72px 96px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+
+  .slide.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* layout variants */
+  .slide.layout-hero    { padding: 0; justify-content: flex-end; }
+  .slide.layout-split   { flex-direction: row; gap: 72px; align-items: center; padding: 64px 96px; }
+  .slide.layout-image   { padding: 48px 96px; gap: 40px; }
+  .slide.layout-center  { align-items: center; justify-content: center; text-align: center; }
+
+  /* ── Typography ───────────────────────────────────────────── */
+
+  .slide-label {
+    font-family: var(--font-display);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 28px;
+    flex-shrink: 0;
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.4rem, 4.5vw, 5rem);
+    font-weight: 400;
+    line-height: 1.05;
+    color: var(--heading);
+    letter-spacing: -0.01em;
+  }
+
+  h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 3vw, 3rem);
+    font-weight: 400;
+    line-height: 1.1;
+    color: var(--heading);
+    letter-spacing: -0.01em;
+    margin-bottom: 32px;
+    flex-shrink: 0;
+  }
+
+  h3 {
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--subtle);
+    margin-bottom: 12px;
+  }
+
+  p {
+    font-size: 1.05rem;
+    line-height: 1.75;
+    color: var(--body);
+    max-width: 56ch;
+  }
+
+  p + p { margin-top: 16px; }
+
+  ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-width: 56ch;
+  }
+
+  li {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--body);
+    padding-left: 20px;
+    position: relative;
+  }
+
+  li::before {
+    content: '—';
+    position: absolute;
+    left: 0;
+    color: var(--muted);
+    font-family: var(--font-display);
+  }
+
+  em {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  strong {
+    font-weight: 500;
+    color: var(--heading);
+  }
+
+  /* ── Split layout ─────────────────────────────────────────── */
+
+  .split-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .split-img {
+    flex: 1.2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  .split-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  /* ── Hero layout ──────────────────────────────────────────── */
+
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+
+  .hero-bg img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.35;
+  }
+
+  .hero-gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, #0a0a0a 18%, #0a0a0a66 55%, transparent);
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 1;
+    padding: 72px 96px;
+  }
+
+  .hero-tag {
+    font-family: var(--font-display);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--subtle);
+    margin-bottom: 20px;
+  }
+
+  /* ── Image-below layout ───────────────────────────────────── */
+
+  .slide-img {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  .slide-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: top;
+  }
+
+  .slide-img.contain img {
+    object-fit: contain;
+    background: #0d1117;
+  }
+
+  /* ── Table ────────────────────────────────────────────────── */
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    max-width: 900px;
+  }
+
+  th {
+    font-family: var(--font-display);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: left;
+    padding: 0 16px 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  td {
+    padding: 14px 16px 14px 0;
+    border-bottom: 1px solid #161616;
+    color: var(--body);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+
+  td:first-child {
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    color: var(--subtle);
+    white-space: nowrap;
+  }
+
+  /* ── Two-column list ──────────────────────────────────────── */
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px 48px;
+    max-width: 900px;
+  }
+
+  /* ── Nav ──────────────────────────────────────────────────── */
+
+  .nav {
+    position: fixed;
+    bottom: 36px;
+    right: 48px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    z-index: 100;
+  }
+
+  .nav-counter {
+    font-family: var(--font-display);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    min-width: 40px;
+    text-align: center;
+  }
+
+  .nav-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .nav-btn:hover {
+    border-color: var(--subtle);
+    color: var(--body);
+  }
+
+  .nav-btn:disabled {
+    opacity: 0.2;
+    cursor: default;
+  }
+
+  /* ── Progress ─────────────────────────────────────────────── */
+
+  .progress {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--border);
+    z-index: 100;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: var(--muted);
+    transition: width 0.4s ease;
+  }
+
+  /* ── Divider ──────────────────────────────────────────────── */
+  .divider {
+    width: 32px;
+    height: 1px;
+    background: var(--border);
+    margin: 24px 0;
+    flex-shrink: 0;
+  }
+
+  /* ── Highlight box ────────────────────────────────────────── */
+  .callout {
+    border-left: 1px solid var(--muted);
+    padding: 16px 24px;
+    background: #111;
+    border-radius: 0 4px 4px 0;
+    max-width: 56ch;
+    margin-top: 24px;
+  }
+
+  .callout p {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 0.95rem;
+    color: var(--subtle);
+  }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+  <!-- ── 01 Opening ─────────────────────────────────────────── -->
+  <div class="slide layout-hero active" data-index="0">
+    <div class="hero-bg">
+      <img src="02-library-hero.png" alt="">
+      <div class="hero-gradient"></div>
+    </div>
+    <div class="hero-content">
+      <p class="hero-tag">Personal project — 2026</p>
+      <h1>Watchlist</h1>
+      <p style="margin-top:16px; max-width:44ch; color:#6b6b6b; font-size:1rem;">
+        A personal film library rebuilt from a Letterboxd export.
+      </p>
+    </div>
+  </div>
+
+  <!-- ── 02 Problem ─────────────────────────────────────────── -->
+  <div class="slide" data-index="1">
+    <span class="slide-label">01 — Problem</span>
+    <h2>Letterboxd is a social platform.<br>This needed to be a personal one.</h2>
+    <ul>
+      <li>Letterboxd is optimised for logging, rating, and being seen — not for private use.</li>
+      <li>Your favourites list exists, but inside someone else's interface and taxonomy.</li>
+      <li>The actual need: at 11pm you know you want something <em>slow and devastating</em> — not a genre filter.</li>
+      <li>The gap is between taste (specific, embodied) and retrieval (assumes you know what to ask for).</li>
+    </ul>
+    <div class="callout">
+      <p>"I know what I like. I don't always know what I want to watch."</p>
+    </div>
+  </div>
+
+  <!-- ── 03 Brief ───────────────────────────────────────────── -->
+  <div class="slide" data-index="2">
+    <span class="slide-label">02 — Brief</span>
+    <h2>Three things Letterboxd doesn't do.</h2>
+    <ul>
+      <li>Surface films by <strong>emotional register</strong>, not just genre.</li>
+      <li>Feel like a <strong>personal collection</strong>, not a social database.</li>
+      <li>Give the films <strong>room</strong> — not reduce them to star ratings and activity feeds.</li>
+    </ul>
+    <div class="divider"></div>
+    <p style="color: var(--subtle); font-size: 0.9rem;">
+      The question was never "how do we display films?" It was "what is the right relationship with this collection?"
+    </p>
+  </div>
+
+  <!-- ── 04 Setup: The Data ──────────────────────────────────── -->
+  <div class="slide layout-split" data-index="3">
+    <div class="split-text">
+      <span class="slide-label">03 — Setup</span>
+      <h2>The data was a starting point, not the product.</h2>
+      <p>A Letterboxd export is a flat CSV — title, URI, date added, rating. That's it.</p>
+      <p>Every entry was enriched via TMDB: backdrop, poster, synopsis, director, cast, streaming. The schema also carries a personal layer — <strong>notes</strong> and <strong>tags</strong> that feed back into search.</p>
+      <p style="margin-top:16px; color: var(--subtle); font-size:0.9rem;">
+        That transforms a spreadsheet into a library.
+      </p>
+    </div>
+    <div class="split-img">
+      <img src="code-04-schema.png" alt="Prisma schema">
+    </div>
+  </div>
+
+  <!-- ── 05 Design Direction ────────────────────────────────── -->
+  <div class="slide layout-image" data-index="4">
+    <div style="flex-shrink:0;">
+      <span class="slide-label">04 — Design direction</span>
+      <h2>A library, not a watchlist.</h2>
+      <div style="display:flex; gap:48px; flex-wrap:wrap;">
+        <div>
+          <h3>Typography</h3>
+          <p style="font-size:0.9rem;">Xanh Mono for display — monospaced, editorial, precise. Not consumer. Work Sans 300 for body — light and unobtrusive.</p>
+        </div>
+        <div>
+          <h3>Palette & layout</h3>
+          <p style="font-size:0.9rem;">Near-black, neutrals. Films as objects, not content. Full-bleed backdrops at low opacity — atmosphere before information.</p>
+        </div>
+        <div>
+          <h3>Tone of voice</h3>
+          <p style="font-size:0.9rem;"><em>"Tonight's suggestion"</em> not "Featured." <em>"A moment."</em> not "Loading…" The copy is curatorial throughout.</p>
+        </div>
+      </div>
+    </div>
+    <div class="slide-img">
+      <img src="02-library-hero.png" alt="Library hero">
+    </div>
+  </div>
+
+  <!-- ── 06 The Library ─────────────────────────────────────── -->
+  <div class="slide layout-image" data-index="5">
+    <div style="flex-shrink:0;">
+      <span class="slide-label">05 — The library</span>
+      <h2>Browse.</h2>
+      <p>Filter by genre, decade, runtime, streaming. "Tonight's suggestion" — a random pick, resets on refresh. Serendipity as a feature, not an afterthought.</p>
+      <p style="margin-top:10px; font-size:0.9rem; color:var(--subtle);">Watched indicator: a single pixel-thin line at the top of the poster card. Minimal — enough.</p>
+    </div>
+    <div class="slide-img">
+      <img src="03-grid.png" alt="Film grid">
+    </div>
+  </div>
+
+  <!-- ── 07 Film Page ───────────────────────────────────────── -->
+  <div class="slide layout-image" data-index="6">
+    <div style="flex-shrink:0;">
+      <span class="slide-label">06 — Film page</span>
+      <h2>Atmosphere before information.</h2>
+      <p>Full-bleed backdrop at low opacity. Personal notes field — free text, for your own references and observations. Custom tags: mood labels, visual references, anything.</p>
+      <p style="margin-top:10px; font-size:0.9rem; color:var(--subtle);">The annotations feed back into search. The more you write, the sharper the library gets.</p>
+    </div>
+    <div class="slide-img">
+      <img src="06-film-detail.png" alt="Film detail">
+    </div>
+  </div>
+
+  <!-- ── 08 Companion / Iteration ──────────────────────────── -->
+  <div class="slide layout-split" data-index="7">
+    <div class="split-text">
+      <span class="slide-label">07 — Iteration</span>
+      <h2>The search box was wrong.</h2>
+      <p>First version: a search box. Problem: search is transactional — it assumes you know what you want.</p>
+      <p>The insight: most of the time you know how you <em>feel</em>, not what you want. So the interface needed to meet you there.</p>
+      <div class="divider"></div>
+      <p>Decision: make it conversational. Two steps — mood, then sharpener. The follow-up questions pattern-match emotional vocabulary and ask one precise question back.</p>
+    </div>
+    <div class="split-img">
+      <img src="04-companion.png" alt="The Companion">
+    </div>
+  </div>
+
+  <!-- ── 09 How search works ────────────────────────────────── -->
+  <div class="slide layout-image" data-index="8">
+    <div style="flex-shrink:0;">
+      <span class="slide-label">08 — Process</span>
+      <h2>No AI. Pure vocabulary.</h2>
+      <p>In-memory keyword scoring, runs in under 5ms. The key decision: a hand-built table maps emotional language to genres. "Melancholy" → Drama. "Noir" → Crime, Thriller, Mystery.</p>
+      <p style="margin-top:10px; font-size:0.9rem; color:var(--subtle);">Why not an LLM? Latency felt wrong for something meant to feel immediate. Being explicit about the vocabulary is also more honest — you can see exactly what the system knows about your taste.</p>
+    </div>
+    <div style="display:flex; gap:16px; flex:1; min-height:0; overflow:hidden;">
+      <div class="slide-img contain" style="flex:1;">
+        <img src="code-01-mood-genres.png" alt="Mood-genre vocabulary">
+      </div>
+      <div class="slide-img contain" style="flex:1;">
+        <img src="code-02-score-weights.png" alt="Score weights">
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 10 Companion voice ─────────────────────────────────── -->
+  <div class="slide layout-split" data-index="9">
+    <div class="split-text">
+      <span class="slide-label">08 — Process</span>
+      <h2>Editorial voice written as code.</h2>
+      <p>The opening questions rotate. The follow-ups don't offer a menu — they ask one more precise question. The copy was written before the code.</p>
+      <div class="callout">
+        <p>"Something to sit inside, or to understand from a distance?"</p>
+      </div>
+      <div class="callout" style="margin-top:12px;">
+        <p>"Slow cinema proper, or just something that doesn't push?"</p>
+      </div>
+    </div>
+    <div class="split-img">
+      <img src="code-03-companion-voice.png" alt="Companion voice code">
+    </div>
+  </div>
+
+  <!-- ── 11 Iteration table ─────────────────────────────────── -->
+  <div class="slide" data-index="10">
+    <span class="slide-label">09 — Iteration</span>
+    <h2>Decisions made.</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Decision</th>
+          <th>First version</th>
+          <th>Why it changed</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Hero framing</td>
+          <td>Featured film</td>
+          <td>"Tonight's suggestion" — editorial framing changes the relationship with the content</td>
+        </tr>
+        <tr>
+          <td>Discovery</td>
+          <td>Search box</td>
+          <td>The Companion — search assumes prior knowledge you often don't have at 11pm</td>
+        </tr>
+        <tr>
+          <td>Mood → genre</td>
+          <td>Direct genre filter only</td>
+          <td>MOOD_GENRES vocabulary — bridges how you think to how data is tagged</td>
+        </tr>
+        <tr>
+          <td>Search engine</td>
+          <td>Explored Claude API</td>
+          <td>Latency + cost felt wrong; hand-built vocabulary is more immediate and honest</td>
+        </tr>
+        <tr>
+          <td>Watched marker</td>
+          <td>Badge / icon overlay</td>
+          <td>1px top border — present enough to register, absent enough not to dominate</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── 12 Learnings ───────────────────────────────────────── -->
+  <div class="slide" data-index="11">
+    <span class="slide-label">10 — Learnings</span>
+    <h2>What this taught.</h2>
+    <div class="two-col">
+      <div>
+        <h3>On design</h3>
+        <ul>
+          <li>"Reskinning" was the wrong frame. This was reimagining the <em>relationship</em> with the collection.</li>
+          <li>Tone of voice is an interface decision. Copy written before UI, not after.</li>
+          <li>Personal data transformed by design becomes a different kind of object.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>On product</h3>
+        <ul>
+          <li>The best interface matches how you actually think, not how the data is structured.</li>
+          <li>No AI doesn't mean no intelligence — the vocabulary table <em>is</em> the intelligence, it's just explicit.</li>
+          <li>A personal tool should feel made, not configured.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 13 What's next ─────────────────────────────────────── -->
+  <div class="slide layout-center" data-index="12">
+    <span class="slide-label" style="margin-bottom:48px;">11 — Next</span>
+    <h2 style="margin-bottom:40px;">Where it goes.</h2>
+    <ul style="text-align:left; max-width:44ch;">
+      <li>Direct sync from Letterboxd when their API opens</li>
+      <li>Richer tagging — pull themes from notes into structured tags automatically</li>
+      <li>Mobile-first viewing mode — the library you actually use on the sofa</li>
+    </ul>
+  </div>
+
+</div>
+
+<!-- ── Nav ─────────────────────────────────────────────────── -->
+<nav class="nav">
+  <button class="nav-btn" id="prev" aria-label="Previous">←</button>
+  <span class="nav-counter" id="counter">1 / 13</span>
+  <button class="nav-btn" id="next" aria-label="Next">→</button>
+</nav>
+
+<div class="progress">
+  <div class="progress-bar" id="progress-bar"></div>
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'))
+  const total  = slides.length
+  let   current = 0
+
+  const prevBtn  = document.getElementById('prev')
+  const nextBtn  = document.getElementById('next')
+  const counter  = document.getElementById('counter')
+  const progressBar = document.getElementById('progress-bar')
+
+  function goTo(n) {
+    slides[current].classList.remove('active')
+    current = Math.max(0, Math.min(total - 1, n))
+    slides[current].classList.add('active')
+    counter.textContent = `${current + 1} / ${total}`
+    prevBtn.disabled = current === 0
+    nextBtn.disabled = current === total - 1
+    progressBar.style.width = `${((current + 1) / total) * 100}%`
+  }
+
+  prevBtn.addEventListener('click', () => goTo(current - 1))
+  nextBtn.addEventListener('click', () => goTo(current + 1))
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown'  || e.key === ' ') goTo(current + 1)
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                      goTo(current - 1)
+  })
+
+  goTo(0)
+</script>
+</body>
+</html>
